@@ -1,21 +1,26 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NovelNest.DataAccess;
+using NovelNest.DataAccess.Repository.IRepository;
 using NovelNest.Models;
+using NovelNest.Utility;
 
 namespace NovelNest.Controllers
 {
+    [Area("Admin")]
+    [Authorize(Roles = SD.Role_Admin)]
     public class CategoryController : Controller
     {
 
-        private readonly ApplicationDbContext _db;
-        public CategoryController(ApplicationDbContext db) 
-        { 
-            _db = db; 
+        private readonly IUnitOfWork _unitOfWork;
+        public CategoryController(IUnitOfWork unitOfWork) 
+        {
+            _unitOfWork = unitOfWork; 
         }
 
         public IActionResult Index()
         {
-            List<Category> objCategoryList = _db.Categories.ToList(); ;
+            List<Category> objCategoryList = _unitOfWork.Category.GetAll().ToList();
             return View(objCategoryList);
         }
 
@@ -41,8 +46,8 @@ namespace NovelNest.Controllers
 
             if (ModelState.IsValid)
             {
-                _db.Categories.Add(obj);
-                _db.SaveChanges();
+                _unitOfWork.Category.Add(obj);
+                _unitOfWork.Save();
                 TempData["success"] = "Category created successfully";
                 return RedirectToAction("Index");
             }
@@ -57,7 +62,7 @@ namespace NovelNest.Controllers
                 return NotFound();
             }
 
-            Category? category = _db.Categories.SingleOrDefault(c => c.Id == id);
+            Category? category = _unitOfWork.Category.Get(c => c.Id == id);
 
             if (category == null)
             {
@@ -73,8 +78,8 @@ namespace NovelNest.Controllers
         {
             if (ModelState.IsValid)
             {
-                _db.Categories.Update(obj);
-                _db.SaveChanges();
+                _unitOfWork.Category.Update(obj);
+                _unitOfWork.Save();
                 TempData["success"] = "Category changed successfully";
                 return RedirectToAction("Index");
             }
@@ -90,7 +95,7 @@ namespace NovelNest.Controllers
                 return NotFound();
             }
 
-            Category? category = _db.Categories.SingleOrDefault(c => c.Id == id);
+            Category? category = _unitOfWork.Category.Get(c => c.Id == id);
 
             if (category == null)
             {
@@ -104,15 +109,15 @@ namespace NovelNest.Controllers
         public IActionResult DeletePOST(int? id)
         {
 
-            Category? obj = _db.Categories.Find(id);
+            Category? obj = _unitOfWork.Category.Get(c => c.Id == id);
 
             if(obj == null)
             {
                 return NotFound();
             }
 
-            _db.Categories.Remove(obj);
-            _db.SaveChanges();
+            _unitOfWork.Category.Add(obj);
+            _unitOfWork.Save();
             TempData["success"] = "Category deleted successfully";
             return RedirectToAction("Index");
         }
